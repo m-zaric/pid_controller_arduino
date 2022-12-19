@@ -1,6 +1,7 @@
 #include <math.h>
 #include<vector>
 #include<HDU/hduVector.h>
+#include<chrono>
 
 class Controller{
     public:
@@ -9,7 +10,10 @@ class Controller{
         double I = 0.0;
 
         hduVector3Dd old_error = {0.0, 0.0, 0.0};
-        hduVector3Dd total_error = {0.0, 0.0, 0.0};;
+        hduVector3Dd total_error = {0.0, 0.0, 0.0};
+        
+        std::chrono::nanoseconds t_old;
+        bool first = true;
 
         Controller(double p){
             P = p;
@@ -27,7 +31,16 @@ class Controller{
         hduVector3Dd pid(hduVector3Dd current_position, hduVector3Dd goal_position){
             hduVector3Dd error = (current_position-goal_position);
             total_error += error;
-            hduVector3Dd result = P*error + D*(error-old_error) + I*total_error;
+            hduVector3Dd result;
+            auto arg = std::chrono::high_resolution_clock::now();
+            std::chrono::nanoseconds t = std::chrono::duration_cast<std::chrono::nanoseconds>(arg);
+            if (first == true){
+                result = P*error;
+                first = false;
+            } 
+            else
+                result = P*error + D/(t-t_old)*(error-old_error) + I*total_error;
+            t_old = t;
             old_error = error;
             return result;
         }
